@@ -87,7 +87,7 @@ g = 0.5
 sx = np.array([[0., 1.], [1., 0.]])
 sz = np.array([[1., 0.], [0., -1.]])
 
-H = -np.kron(sz, sz) + g * np.kron(sx, np.eye(2, 2))
+H = -1 * np.kron(sz, sz) + g * np.kron(sx, np.eye(2, 2))
 U = expm(-delta * H)
 
 ############### Initial state : |0000> ########################
