@@ -3,7 +3,6 @@ from scipy.linalg import expm
 from scipy import integrate
 
 
-
 def itebd(G_list, l_list, U, chi_max):
     " Updates the G and s matrices using U and the TEBD protocol "
     d = G_list[0].shape[0]
@@ -22,11 +21,13 @@ def itebd(G_list, l_list, U, chi_max):
         theta = np.tensordot(theta, np.diag(l_list[ib], 0), axes=(3, 0))
 
         # Apply U
-        theta = np.tensordot(theta, np.reshape(U, (d, d, d, d)), axes=([1, 2], [0, 1]))
+        theta = np.tensordot(theta, np.reshape(U, (d, d, d, d)),
+                             axes=([1, 2], [0, 1]))
 
         # SVD
-        theta = np.reshape(np.transpose(theta, (2, 0, 3, 1)), (d * chi1, d * chi3))  # ip a jp b
-        X, Y, Z = np.linalg.svd(theta);
+        theta = np.reshape(np.transpose(theta, (2, 0, 3, 1)),
+                           (d * chi1, d * chi3))  # ip a jp b
+        X, Y, Z = np.linalg.svd(theta)
         Z = Z.T
         chi2 = np.min([np.sum(Y > 10. ** (-10)), chi_max])
 
@@ -34,44 +35,52 @@ def itebd(G_list, l_list, U, chi_max):
         l_list[ia] = Y[0:chi2] / np.sqrt(sum(Y[0:chi2] ** 2))
 
         X = np.reshape(X[:, 0:chi2], (d, chi1, chi2))
-        G_list[ia] = np.transpose(np.tensordot(np.diag(l_list[ib] ** (-1)), X, axes=(1, 1)), (1, 0, 2))
+        G_list[ia] = np.transpose(np.tensordot(np.diag(l_list[ib] ** (-1)),
+                                               X, axes=(1, 1)),
+                                  (1, 0, 2))
 
         Z = np.transpose(np.reshape(Z[:, 0:chi2], (d, chi3, chi2)), (0, 2, 1))
         G_list[ib] = np.tensordot(Z, np.diag(l_list[ib] ** (-1)), axes=(2, 0))
 
 
+# """ Expectation value for a site operator """
 def site_expectation_value(G_list, l_list, O):
-    " Expectation value for a site operator "
+    """Evaluate expectation value for a site operator."""
     E = []
     for isite in range(0, 2):
-        theta = np.tensordot(np.diag(l_list[np.mod(isite - 1, 2)]), G_list[isite], axes=(1, 1))
+        theta = np.tensordot(np.diag(l_list[np.mod(isite - 1, 2)]),
+                             G_list[isite], axes=(1, 1))
         theta = np.tensordot(theta, np.diag(l_list[isite]), axes=(2, 0))
         theta_O = np.tensordot(theta, O, axes=(1, 0)).conj()
-        E.append(np.squeeze(np.tensordot(theta_O, theta, axes=([0, 1, 2], [0, 2, 1]))).item())
+        E.append(np.squeeze(np.tensordot(theta_O, theta,
+                                         axes=([0, 1, 2], [0, 2, 1]))).item())
     return (E)
 
 
 def bond_expectation_value(G_list, l_list, O):
-    " Expectation value for a site operator "
+    """Evaluate expectation value for a site operator."""
     E = []
     for ibond in range(0, 2):
-        ia = np.mod(ibond, 2);
+        ia = np.mod(ibond, 2)
         ib = np.mod(ibond + 1, 2)
         theta = np.tensordot(np.diag(l_list[ib]), G_list[ia], axes=(1, 1))
         theta = np.tensordot(theta, np.diag(l_list[ia], 0), axes=(2, 0))
         theta = np.tensordot(theta, G_list[ib], axes=(2, 1))
         theta = np.tensordot(theta, np.diag(l_list[ib], 0), axes=(3, 0))
-        theta_O = np.tensordot(theta, np.reshape(O, (d, d, d, d)), axes=([1, 2], [0, 1])).conj()
-        E.append(np.squeeze(np.tensordot(theta_O, theta, axes=([0, 1, 2, 3], [0, 3, 1, 2]))).item())
+        theta_O = np.tensordot(theta, np.reshape(O, (d, d, d, d)),
+                               axes=([1, 2], [0, 1])).conj()
+        E.append(np.squeeze(np.tensordot(theta_O, theta,
+                                         axes=([0, 1, 2, 3],
+                                               [0, 3, 1, 2]))).item())
 
     return (E)
 
 
 ######## Define the simulation parameter ######################
-chi_max = 10;
-delta = 0.01;
-N = 1000;
-d = 2;
+chi_max = 10
+delta = 0.01
+N = 1000
+d = 2
 g = 0.5
 
 ########### Define Ising Hamiltonian and get U ################
@@ -82,15 +91,15 @@ H = -np.kron(sz, sz) + g * np.kron(sx, np.eye(2, 2))
 U = expm(-delta * H)
 
 ############### Initial state : |0000> ########################
-Ga = np.zeros((d, 1, 1), dtype=float);
+Ga = np.zeros((d, 1, 1), dtype=float)
 Ga[0, 0, 0] = 1.
-Gb = np.zeros((d, 1, 1), dtype=float);
+Gb = np.zeros((d, 1, 1), dtype=float)
 Gb[0, 0, 0] = 1.
 G_list = [Ga, Gb]
 
-la = np.zeros(1);
+la = np.zeros(1)
 la[0] = 1.
-lb = np.zeros(1);
+lb = np.zeros(1)
 lb[0] = 1.
 l_list = [la, lb]
 
